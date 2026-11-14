@@ -8,6 +8,10 @@ A 3D-printed dog treat dispenser controlled from a browser on your local Wi-Fi n
 | --- | --- |
 | <img src="images/FullBuild.jpeg" alt="Assembled dog treat dispenser connected to its wall adapter" width="300"> | <img src="images/TopCloseupe.jpeg" alt="Top view of the loaded treat wheel and its dispensing opening" width="300"> |
 
+### ESP32 and TMC2209 carrier PCB
+
+<a href="#through-hole-pcb"><img src="images/PCB-Top.png" alt="Top view of the through-hole ESP32 and TMC2209 carrier PCB" width="600"></a>
+
 ## Design files
 
 [View the assembled dispenser in 3D](cad/ViewableAssemblySTL.STL)
@@ -36,6 +40,14 @@ Connect the motor coils to the driver's two output pairs and power the driver fr
 2. Set `ssid` and `password` in your local copy of the sketch, then upload it to the ESP32.
 3. Open the Serial Monitor at `115200` baud and note the IP address printed when the ESP32 connects to Wi-Fi.
 4. From a device on the same network, open `http://<ESP32-IP>` and press **Dispense** to rotate the wheel 45° clockwise. The page also offers quarter turns and full turns in either direction.
+
+## Through-hole PCB
+
+Open the [KiCad project](pcb/DogTreatDispensorPCB/DogTreatDispensorPCB.kicad_pro) for the 76 × 59 mm carrier. It uses 2.54 mm socket strips for the 38-pin ESP32-DevKitC V4 (25.4 mm between rows) and the BIGTREETECH TMC2209 V1.2 (12.7 mm between rows). Match the ESP32 USB connector and the driver's VM and EN pins to the labels on the board. [ESP32 dimensions](https://dl.espressif.com/dl/schematics/esp32_devkitc_v4_dimensions.pdf) · [TMC2209 pinout](https://global.bttwiki.com/TMC2209.html#pinoutfunction)
+
+- Power the ESP32 by USB and connect a 12 V DC motor supply to J1, a 5.08 mm pitch screw terminal.
+- Connect the two motor coils to the A1/A2 and B1/B2 pairs on J2, a 3.5 mm pitch screw terminal.
+- Fit a 100 µF, 35 V radial capacitor at C1 (8 mm body, 3.5 mm lead pitch) and a 10 kΩ axial resistor at R1 (7.62 mm lead pitch).
 
 ## License
 

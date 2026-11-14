@@ -1,0 +1,4 @@
+(fp_lib_table
+ (version 7)
+ (lib (name "Dispenser")(type "KiCad")(uri "${KIPRJMOD}/Dispenser.pretty")(options "")(descr "Dispenser module sockets"))
+)
