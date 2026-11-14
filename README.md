@@ -10,17 +10,32 @@ A 3D-printed dog treat dispenser controlled from a browser on your local Wi-Fi n
 
 ## Design files
 
-<img src="images/CAD%20Isometric.png" alt="Isometric CAD view of the dog treat dispenser" width="450">
+[View the assembled dispenser in 3D](cad/ViewableAssemblySTL.STL)
 
-- [SolidWorks assembly](cad/Assem.SLDASM) and [part files](cad/)
-- [STL exports for 3D printing](cad/STL/), including the base plate, lower plate, treat hopper, spindexer, and spindexer insert
+<a href="cad/ViewableAssemblySTL.STL"><img src="images/CAD%20Isometric.png" alt="Isometric CAD view of the dog treat dispenser" width="450"></a>
+
+- [SolidWorks assembly](cad/SolidWorks%20Files/Assem.SLDASM) and [part files](cad/SolidWorks%20Files/)
+- [STL exports for 3D printing](cad/SolidWorks%20Files/STL/), including the base plate, lower plate, treat hopper, spindexer, and spindexer insert
 
 ## ESP32 setup
 
-1. Open the [Arduino sketch](software/WebServerForDogTreatDispensor/WebServerForDogTreatDispensor.ino) in the Arduino IDE. Select your ESP32 board and install the Arduino `Stepper` library if needed.
+The ESP32 controls a 1.8° bipolar stepper through a TMC2209 in standalone STEP/DIR mode.
+
+| TMC2209 signal | Connection |
+| --- | --- |
+| STEP | ESP32 GPIO 25 |
+| DIR | ESP32 GPIO 26 |
+| EN / ENN (active low) | ESP32 GPIO 27 |
+| VIO | ESP32 3.3 V |
+| GND | Common ground with the ESP32 and motor supply |
+| MS1 and MS2 | Both LOW for 1/8 microstepping |
+
+Connect the motor coils to the driver's two output pairs and power the driver from a separate motor supply. Set the current limit using the procedure for your TMC2209 module and the motor's phase-current rating. [TMC2209 datasheet](https://www.analog.com/media/en/technical-documentation/data-sheets/tmc2209_datasheet_rev1.09.pdf)
+
+1. Open the [Arduino sketch](software/WebServerForDogTreatDispensor/WebServerForDogTreatDispensor.ino) in the Arduino IDE and select your ESP32 board.
 2. Set `ssid` and `password` in your local copy of the sketch, then upload it to the ESP32.
 3. Open the Serial Monitor at `115200` baud and note the IP address printed when the ESP32 connects to Wi-Fi.
-4. From a device on the same network, open `http://<ESP32-IP>` in a browser. The control page offers quarter turns and full turns in either direction and shows the last commanded movement.
+4. From a device on the same network, open `http://<ESP32-IP>` and press **Dispense** to rotate the wheel 45° clockwise. The page also offers quarter turns and full turns in either direction.
 
 ## License
 

@@ -1,5 +1,4 @@
 #include <WiFi.h>
-#include <Stepper.h>
 
 const char* ssid = "";
 const char* password = "";
@@ -8,12 +7,17 @@ WiFiServer server(80);
 
 String header;
 
-const int stepsPerRevolution = 2048;
-
-
-
-
-Stepper myStepper(stepsPerRevolution, 16, 18, 17, 19);
+const uint8_t stepPin = 25;
+const uint8_t directionPin = 26;
+const uint8_t enablePin = 27;
+const uint8_t clockwiseLevel = HIGH;
+const int motorFullStepsPerRevolution = 200;
+const int microstepsPerFullStep = 8;
+const int stepsPerRevolution = motorFullStepsPerRevolution * microstepsPerFullStep;
+const int stepsPerDispense = stepsPerRevolution / 8;
+const unsigned long motorSpeedRpm = 10;
+const unsigned long stepIntervalUs = 60000000UL / (stepsPerRevolution * motorSpeedRpm);
+const unsigned int stepPulseWidthUs = 4;
 
 String stepperState = "stopped";
 
@@ -21,10 +25,36 @@ unsigned long currentTime = millis();
 unsigned long previousTime = 0;
 const long timeoutTime = 2000;
 
+void moveStepper(int steps) {
+  digitalWrite(directionPin, steps > 0 ? clockwiseLevel : !clockwiseLevel);
+  digitalWrite(enablePin, LOW);
+  delay(2);
+
+  const int pulseCount = abs(steps);
+  for (int pulse = 0; pulse < pulseCount; ++pulse) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(stepPulseWidthUs);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(stepIntervalUs - stepPulseWidthUs);
+
+    // Let the idle task run during longer moves.
+    if ((pulse + 1) % 32 == 0) {
+      delay(1);
+    }
+  }
+
+  digitalWrite(enablePin, HIGH);
+}
+
 void setup() {
   Serial.begin(115200);
 
-  myStepper.setSpeed(10);
+  pinMode(enablePin, OUTPUT);
+  digitalWrite(enablePin, HIGH);
+  pinMode(stepPin, OUTPUT);
+  digitalWrite(stepPin, LOW);
+  pinMode(directionPin, OUTPUT);
+  digitalWrite(directionPin, clockwiseLevel);
 
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -66,30 +96,41 @@ void loop() {
         if (c == '\n') {
           if (currentLine.length() == 0) {
 
+            if (header.startsWith("POST /dispense ")) {
+              moveStepper(stepsPerDispense);
+              stepperState = "dispensed (1/8 turn clockwise)";
+              client.println("HTTP/1.1 303 See Other");
+              client.println("Location: /");
+              client.println("Content-Length: 0");
+              client.println("Connection: close");
+              client.println();
+              break;
+            }
+
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println("Connection: close");
             client.println();
 
          
-            if (header.indexOf("GET /stepper/cw") >= 0) {
+            if (header.startsWith("GET /stepper/cw ")) {
               stepperState = "clockwise";
-              myStepper.step(512);   //480
+              moveStepper(stepsPerRevolution / 4);
             }
 
-            else if (header.indexOf("GET /stepper/ccw") >= 0) {
+            else if (header.startsWith("GET /stepper/ccw ")) {
               stepperState = "counterclockwise";
-              myStepper.step(-512);  //-500 , -490 ish
+              moveStepper(-stepsPerRevolution / 4);
             }
 
-            else if (header.indexOf("GET /stepper/fullcw") >= 0) {
+            else if (header.startsWith("GET /stepper/fullcw ")) {
               stepperState = "one full clockwise rotation";
-              myStepper.step(stepsPerRevolution);
+              moveStepper(stepsPerRevolution);
             }
 
-            else if (header.indexOf("GET /stepper/fullccw") >= 0) {
+            else if (header.startsWith("GET /stepper/fullccw ")) {
               stepperState = "one full counterclockwise rotation";
-              myStepper.step(-stepsPerRevolution);
+              moveStepper(-stepsPerRevolution);
             }
 
            
@@ -109,9 +150,10 @@ void loop() {
             client.println("</head><body>");
 
             client.println("<h1>ESP32 Stepper Motor Control</h1>");
-            client.println("<p>This controls a stepper motor using a ULN2003 driver.</p>");
+            client.println("<p>TMC2209 stepper motor control</p>");
 
             client.println("<p>Stepper state: <b>" + stepperState + "</b></p>");
+            client.println("<form method=\"post\" action=\"/dispense\"><button class=\"button\" type=\"submit\">DISPENSE (1/8 TURN)</button></form>");
 
             client.println("<p><a href=\"/stepper/cw\"><button class=\"button\">CLOCKWISE 1/4 TURN</button></a></p>");
 
